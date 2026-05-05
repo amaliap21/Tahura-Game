@@ -7,6 +7,7 @@ public class MenuController : MonoBehaviour
 {
     [Header("=== PANELS ===")]
     public GameObject mainMenuPanel;
+    public GameObject startPanel;
     public GameObject optionsPanel;
 
     [Header("=== SLIDERS ===")]
@@ -20,12 +21,14 @@ public class MenuController : MonoBehaviour
     public string gameSceneName = "GameScene";
     public string creditsSceneName = "";
 
+    const string SaveSlotKey = "HasSaveSlot";
+
     void Start()
     {
         ShowMainMenu();
 
         float savedBGM = PlayerPrefs.GetFloat("BGMVolume", 1f);
-        float savedSFX = PlayerPrefs.GetFloat("SFXVolume", 1f);
+        float savedSFX = PlayerPrefs.GetFloat("SFXVolume", 0.5f);
 
         if (bgmSlider != null) bgmSlider.value = savedBGM;
         if (sfxSlider != null) sfxSlider.value = savedSFX;
@@ -37,17 +40,20 @@ public class MenuController : MonoBehaviour
         if (sfxSlider != null) sfxSlider.onValueChanged.AddListener(OnSFXChanged);
     }
 
+    // === BUTTON CALLBACKS — MAIN MENU ===
+
     public void OnStartClick()
     {
-        if (!string.IsNullOrEmpty(gameSceneName))
+        if (startPanel != null)
+            startPanel.SetActive(true);
+        else if (!string.IsNullOrEmpty(gameSceneName))
             SceneManager.LoadScene(gameSceneName);
-        else
-            Debug.LogWarning("Game scene name belum di-set di MenuController.");
     }
 
     public void OnOptionsClick()
     {
         mainMenuPanel.SetActive(false);
+        if (startPanel != null) startPanel.SetActive(false);
         optionsPanel.SetActive(true);
     }
 
@@ -67,11 +73,39 @@ public class MenuController : MonoBehaviour
 #endif
     }
 
+    // === BUTTON CALLBACKS — START SUBMENU ===
+
+    public void OnNewGameClick()
+    {
+        PlayerPrefs.SetInt(SaveSlotKey, 1);
+        PlayerPrefs.Save();
+        if (!string.IsNullOrEmpty(gameSceneName))
+            SceneManager.LoadScene(gameSceneName);
+        else
+            Debug.LogWarning("Game scene name belum di-set di MenuController.");
+    }
+
+    public void OnContinueClick()
+    {
+        if (PlayerPrefs.GetInt(SaveSlotKey, 0) == 0)
+        {
+            Debug.Log("Belum ada save data — silakan New game.");
+            return;
+        }
+        if (!string.IsNullOrEmpty(gameSceneName))
+            SceneManager.LoadScene(gameSceneName);
+    }
+
+    // === BUTTON CALLBACKS — BACK / OPTIONS ===
+
     public void OnBackClick()
     {
-        PlayerPrefs.SetFloat("BGMVolume", bgmSlider.value);
-        PlayerPrefs.SetFloat("SFXVolume", sfxSlider.value);
-        PlayerPrefs.Save();
+        if (optionsPanel != null && optionsPanel.activeSelf)
+        {
+            PlayerPrefs.SetFloat("BGMVolume", bgmSlider.value);
+            PlayerPrefs.SetFloat("SFXVolume", sfxSlider.value);
+            PlayerPrefs.Save();
+        }
         ShowMainMenu();
     }
 
@@ -79,6 +113,8 @@ public class MenuController : MonoBehaviour
     {
         Debug.Log("How to Play — tambahkan logic di sini");
     }
+
+    // === SLIDER ===
 
     void OnBGMChanged(float value)
     {
@@ -116,7 +152,8 @@ public class MenuController : MonoBehaviour
 
     void ShowMainMenu()
     {
-        mainMenuPanel.SetActive(true);
-        optionsPanel.SetActive(false);
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+        if (startPanel != null) startPanel.SetActive(false);
+        if (optionsPanel != null) optionsPanel.SetActive(false);
     }
 }
